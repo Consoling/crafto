@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "118700844648",
+    "project_id": "crafto-bed1f",
+    "storage_bucket": "crafto-bed1f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:118700844648:android:09cb505937619f0f5a3ddd",
+        "android_client_info": {
+          "package_name": "com.example.crafto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5soHFQRi3noJiluVQnTdAMSFH9XFCYFE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

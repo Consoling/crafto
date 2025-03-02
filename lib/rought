@@ -1,0 +1,36 @@
+   /* await FirebaseAuth.instance.verifyPhoneNumber(
+          phoneNumber: "+91${_phoneController.text}",
+          verificationCompleted: (PhoneAuthCredential credential) async {
+            // Auto-retrieval of OTP (Android only)
+            await FirebaseAuth.instance.signInWithCredential(credential);
+            // Navigate to the next screen or perform other actions
+          },
+          verificationFailed: (FirebaseAuthException e) {
+            // Handle verification failure
+            print('Verification failed: ${e.message}');
+            _showErrorDialog('Verification failed: ${e.message}');
+            setState(() {
+              _isLoading = false;
+              _isButtonPressed = false;
+            });
+          },
+          codeSent: (String verificationId, int? resendToken) {
+            // Save the verification ID for later use
+            _verificationId = verificationId;
+            // Transition to OTP input screen
+            setState(() {
+              _isLoading = false;
+              _isOtpSent = true;
+            });
+            _startOtpTimer();
+          },
+          codeAutoRetrievalTimeout: (String verificationId) {
+            // Handle auto-retrieval timeout
+            print('Auto-retrieval timeout');
+            _showErrorDialog('Auto-retrieval timeout');
+            setState(() {
+              _isLoading = false;
+              _isButtonPressed = false;
+            });
+          },
+        ); */
