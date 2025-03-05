@@ -34,3 +34,331 @@
             });
           },
         ); */
+
+        import 'package:crafto/profile_page.dart';
+        import 'package:flutter/material.dart';
+        import 'package:url_launcher/url_launcher.dart';
+
+        class HomePage extends StatefulWidget {
+          const HomePage({Key? key}) : super(key: key);
+
+          @override
+          State<HomePage> createState() => _HomePageState();
+        }
+
+        class _HomePageState extends State<HomePage> {
+          String selectedCategory = "";
+
+
+          final List<Map<String, String?>> categories = [
+            {'name': 'Happy', 'emoji': '😊'},
+            {'name': 'Sad', 'emoji': '😢'},
+            {'name': 'Emotional', 'emoji': '😌'},
+            {'name': 'Holi', 'emoji': '🎨'},
+            {'name': 'Angry', 'emoji': '😡'},
+            {'name': 'Surprised', 'emoji': '😮'},
+            {'name': 'Bored', 'emoji': null},  // No emoji
+            {'name': 'Confused', 'emoji': '🤔'},
+            {'name': 'Relaxed', 'emoji': '😌'},
+            {'name': 'Nervous', 'emoji': '😬'},
+            {'name': 'Content', 'emoji': '🙂'},
+            {'name': 'Curious', 'emoji': '🤨'},
+            {'name': 'Anxious', 'emoji': '😟'},
+            {'name': 'Grateful', 'emoji': '🙏'},
+            {'name': 'Hopeful', 'emoji': '🌱'},
+            {'name': 'Fearful', 'emoji': '😨'},
+            {'name': 'Proud', 'emoji': '😎'},
+            {'name': 'Guilty', 'emoji': '😔'},
+          ];
+
+          bool showAllCategories = false; // Flag to control whether to show all categories
+
+          // Dummy list of posts
+          final List<Map<String, String>> posts = [
+            {
+              'image': 'assets/post1.jpg',
+              'description': 'A beautiful sunset at the beach!',
+            },
+            {
+              'image': 'assets/post2.jpg',
+              'description': 'Amazing hike in the mountains.',
+            },
+            {
+              'image': 'assets/post3.jpg',
+              'description': 'Had a great day with friends!',
+            },
+            {
+              'image': 'assets/post4.jpg',
+              'description': 'Relaxing by the lake.',
+            },
+          ];
+
+
+          Future<void> _shareOnWhatsApp(String message) async {
+            final Uri url = Uri.parse('https://wa.me/?text=$message');
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url);
+            } else {
+              throw 'Could not open WhatsApp';
+            }
+          }
+
+          @override
+          Widget build(BuildContext context) {
+            return Scaffold(
+              extendBodyBehindAppBar: true,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0, // Remove shadow
+                flexibleSpace: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.deepPurple.shade400, Colors.deepPurple.shade800],
+                      transform: const GradientRotation(
+                        1.7708,
+                      ),
+                    ),
+                  ),
+                ),
+                title: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3), // Transparent white
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: TextField(
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      hintStyle: TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(Icons.search, color: Colors.white),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: Material(
+                      color: Colors.transparent, // Make sure the button is transparent
+                      shape: CircleBorder(), // Make the button round
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30), // Set the radius for the rounded button
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => ProfilePage(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                const begin = 0.0;
+                                const end = 1.0;
+                                const curve = Curves.easeInOut;
+
+                                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                                return FadeTransition(
+                                  opacity: animation.drive(tween),
+                                  child: child,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        child: CircleAvatar(
+                          radius: 20, // Adjust the size of the avatar
+                          backgroundImage: AssetImage('assets/avatar.jpg'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              body: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child:
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+
+                    SizedBox(height: 90), // Adjust this value to control the spacing from the app bar
+
+
+                     Padding(padding: EdgeInsets.only(bottom: 20), child: Wrap(
+                       spacing: 8.0, // Horizontal space between categories
+                       runSpacing: 8.0, // Vertical space between rows
+                       children: [
+                         ... (showAllCategories ? categories : categories.take(12).toList()).map((category) {
+                           return GestureDetector(
+                             onTap: () {
+                               setState(() {
+                                 selectedCategory = category['name']!;
+                               });
+                             },
+                             child: AnimatedContainer(
+                               duration: Duration(milliseconds: 300),
+                               decoration: BoxDecoration(
+                                 color: Colors.transparent,
+                                 border: Border.all(
+                                   color: selectedCategory == category['name']
+                                       ? Colors.blue
+                                       : Colors.grey,
+                                   width: selectedCategory == category['name'] ? 2.0 : 1.0,
+                                 ),
+                                 borderRadius: BorderRadius.circular(8), // Slightly rounded borders
+                               ),
+                               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12), // Smaller padding
+                               child: Row(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                   if (category['emoji'] != null)
+                                     Text(
+                                       category['emoji']!,
+                                       style: TextStyle(fontSize: 16),
+                                     ),
+                                   SizedBox(width: 4), // Space between emoji and text
+                                   Text(
+                                     category['name']!,
+                                     style: TextStyle(
+                                       fontSize: 12, // Smaller text
+                                       fontWeight: FontWeight.bold,
+                                       color: selectedCategory == category['name']
+                                           ? Colors.blue
+                                           : Colors.black,
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             ),
+                           );
+                         }).toList(),
+
+                         if (!showAllCategories)
+                           Container(
+                             padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                             decoration: BoxDecoration(
+                               color: Colors.transparent,
+                               border: Border.all(
+                                 color: Colors.blue,
+                                 width: 1.0,
+                               ),
+                               borderRadius: BorderRadius.circular(8),
+                             ),
+                             child: TextButton(
+                               onPressed: () {
+                                 setState(() {
+                                   showAllCategories = true;
+                                 });
+                               },
+                               child: Text(
+                                 "View All",
+                                 style: TextStyle(
+                                   fontWeight: FontWeight.bold,
+                                   fontSize: 12,
+                                   color: Colors.blue,
+                                 ),
+                               ),
+                             ),
+                           ),
+                       ],
+                     ),),
+
+
+                    Divider(
+                      color: Colors.grey, // Gray color for the divider
+                      thickness: 2,       // Set the thickness of the divider
+                      indent: 1,          // Left indentation
+                      endIndent: 1,       // Right indentation
+                    ),
+
+
+                    SizedBox(height: 10),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return
+                            Card(
+                            margin: EdgeInsets.symmetric(vertical: 12),
+                            elevation: 8,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(post['image']!),
+
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    children: [
+
+                                      OverflowBar(
+                                        overflowAlignment: OverflowBarAlignment.start,
+                                        children: [
+                                          ElevatedButton.icon(
+                                            onPressed: () => _shareOnWhatsApp(post['description']!),
+                                            icon: Icon(Icons.share, color: Colors.white),
+                                            label: Text("Share on WhatsApp", style: TextStyle(color: Colors.white)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.green, // WhatsApp green
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(30),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8), // Space between buttons
+                                          ElevatedButton.icon(
+                                            onPressed: () {
+                                              // Handle download action
+                                            },
+                                            icon: Icon(Icons.download, color: Colors.white),
+                                            label: Text("Download", style: TextStyle(color: Colors.white)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blue, // Blue color
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(30),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Edit button taking the entire row
+                                      SizedBox(height: 8), // Space between buttons
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          // Handle change photo action
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.orange, // Edit button color
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(30),
+                                          ),
+                                        ),
+                                        child: Text("Edit Photo", style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                )
+
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        }

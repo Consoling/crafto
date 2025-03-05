@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class UserPreferences {
+  static const _storage = FlutterSecureStorage();
   //  keys
   static const String usernameKey = 'username';
   static const String userIDKey = 'userID';
@@ -16,13 +17,14 @@ class UserPreferences {
     required String username,
     required String userID,
     required String phoneNumber,
-    required String email,
+    String? email,
     required String language,
     required String accountType,
     required bool isPremium,
     required bool isVerified,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    email = email ?? '';
     await prefs.setString(usernameKey, username);
     await prefs.setString(userIDKey, userID);
     await prefs.setString(phoneNumberKey, phoneNumber);
@@ -55,5 +57,31 @@ class UserPreferences {
       'isPremium': isPremium,
       'isVerified': isVerified,
     };
+  }
+
+  static Future<String?> getAccessToken() async {
+    return await _storage.read(key: 'accessToken');
+  }
+
+  static Future<void> setAccessToken(String accessToken) async {
+    await _storage.write(key: 'accessToken', value: accessToken);
+  }
+
+
+  // Method to get the refresh token from secure storage
+  static Future<String?> getRefreshToken() async {
+    return await _storage.read(key: 'refreshToken');
+  }
+
+  // Method to get the userId from secure storage
+  static Future<String?> getUserId() async {
+    return await _storage.read(key: 'userId');
+  }
+
+  // Method to delete all stored tokens
+  static Future<void> deleteTokens() async {
+    await _storage.delete(key: 'accessToken');
+    await _storage.delete(key: 'refreshToken');
+    await _storage.delete(key: 'userId');
   }
 }

@@ -1,4 +1,6 @@
+import 'package:crafto/helpers/user_preferences.dart';
 import 'package:crafto/homeScreen.dart';
+import 'package:crafto/services/user_service.dart';
 import 'package:crafto/user_handle_creation.dart';
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
@@ -13,7 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     _checkTokenAndNavigate();
+    refreshAccessToken(context);
   }
 
   Future<void> _checkTokenAndNavigate() async {
@@ -90,21 +92,40 @@ class _SplashScreenState extends State<SplashScreen> {
 
 // Home Screen Widget
 class HomeScreen extends StatefulWidget {
+  //const HomeScreen({super.key});c
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _formKey = GlobalKey<FormState>();
+  Map<String, dynamic> userData = {};
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+   _loadUserData();
+  }
 
-  // Text editing controllers for the fields
+  Future<void> _loadData() async {
+    await syncDataWithBackend(); // Sync data with backend and update SharedPreferences
+  }
+
+  Future<void> _loadUserData() async {
+    Map<String, dynamic> data = await UserPreferences.loadUserData();
+    setState(() {
+      userData = data;
+    });
+  }
+
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
   bool _isButtonPressed = false;
   bool _isOtpSent = false;
-  bool _canResendOtp = false; // To handle the resend button visibility
+  bool _canResendOtp = false;
   int _remainingTime = 59;
   final Dio dio = Dio();
   String _countryCode = '+91';
@@ -118,14 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return true; // Valid OTP
   }
-
   bool _isLoginActive = false;
-
   final storage = FlutterSecureStorage();
   String? _accessToken;
   String? _refreshToken;
   String? _userId;
-
   Timer? _timer;
   Future<void> _generateToken({required String phoneNumber}) async {
     setState(() {
@@ -134,11 +152,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final response = await dio.post(
-        '${dotenv.env['SESSION_CREATION_ROUTE']}', // Your token endpoint
+        '${dotenv.env['SESSION_CREATION_ROUTE']}',
         data: {'phoneNumber': phoneNumber},
         options: Options(
           headers: {'Content-Type': 'application/json; charset=UTF-8'},
-          validateStatus: (status) => true, // Accept all status codes
+          validateStatus: (status) => true,
         ),
       );
 
@@ -185,11 +203,35 @@ class _HomeScreenState extends State<HomeScreen> {
     if (redirectTo == '/user-handle-creation') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => UserHandleCreation(),
-        ), // Replace UserHandleCreation with your actual screen
+        PageRouteBuilder(
+          pageBuilder:
+              (context, animation, secondaryAnimation) => UserHandleCreation(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = 0.0;
+            const end = 1.0;
+            const curve = Curves.easeInOut;
+
+            var tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+
+            return FadeTransition(
+              opacity: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
       );
-    } else {
+    }
+    else if (redirectTo == '/home') {
+      Navigator.pushAndRemoveUntil(
+        context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+            (Route<dynamic> route) => false,
+      );
+    }
+    else {
       // Handle other routes or default route
       print('Unknown route: $redirectTo');
       Navigator.pushReplacement(
@@ -203,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _startOtpTimer() {
     _canResendOtp = false; // Disable resend button initially
-    _remainingTime = 30;
+    _remainingTime = 59;
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         if (_remainingTime > 0) {
@@ -236,6 +278,73 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Define the endpoint URL
         final String url = '${dotenv.env['INITIAL_SIGNUP_ROUTE']}';
+
+        // Make the POST request
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {'Content-Type': 'application/json; charset=UTF-8'},
+          body: json.encode(body),
+        );
+
+        // Check the response status code
+        if (response.statusCode == 201) {
+          // Backend successfully received data and sent OTP
+          print('OTP sent successfully');
+          setState(() {
+            _isLoading = false;
+            _isOtpSent = true;
+          });
+          _startOtpTimer();
+        } else {
+          // Backend returned an error
+          print('Error sending data to backend: ${response.statusCode}');
+          _showErrorDialog(
+            'Error sending data to backend: ${response.statusCode}',
+          );
+          setState(() {
+            _isLoading = false;
+            _isButtonPressed = false;
+          });
+        }
+      } catch (e) {
+        // Handle errors such as network issues or unexpected errors
+        print('Error sending data to backend: $e');
+        _showErrorDialog(
+          'An error occurred. Please check your connection and try again.',
+        );
+        setState(() {
+          _isLoading = false;
+          _isButtonPressed = false;
+        });
+      }
+
+      print("Form is valid");
+
+    } else {
+      _triggerHapticFeedback();
+      setState(() {
+        _isButtonPressed = false;
+      });
+      print("Form is not valid");
+    }
+  }
+
+  Future<void> _submitLoginForm() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+        _isButtonPressed = true;
+      });
+
+      try {
+        // Prepare the request payload
+        final Map<String, String> body = {
+          'phoneNumber': '$_countryCode${_phoneController.text}',
+          'password': _passwordController.text,
+        };
+
+        // Define the endpoint URL
+        final String url = '${dotenv.env['LOGIN_ROUTE']}';
 
         // Make the POST request
         final response = await http.post(
@@ -527,11 +636,11 @@ class _HomeScreenState extends State<HomeScreen> {
           height:
               _isOtpSent
                   ? MediaQuery.of(context).viewInsets.bottom > 0
-                      ? 350
-                      : 350
+                      ? 400
+                      : 420
                   : MediaQuery.of(context).viewInsets.bottom > 0
                   ? 400
-                  : 420, // Dynamically adjust height
+                  : 420,
           child: SingleChildScrollView(
             physics: BouncingScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
@@ -822,8 +931,8 @@ class _HomeScreenState extends State<HomeScreen> {
           height:
               _isOtpSent
                   ? MediaQuery.of(context).viewInsets.bottom > 0
-                      ? 350
-                      : 350
+                      ? 400
+                      : 420
                   : MediaQuery.of(context).viewInsets.bottom > 0
                   ? 400
                   : 420, // Dynamically adjust height
@@ -850,90 +959,212 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  Row(
-                    children: [
-                      CountryCodePicker(
-                        onChanged: (countryCode) {
-                          setState(() {
-                            _countryCode = countryCode.dialCode!;
-                          });
-                        },
-                        initialSelection:
-                            'IN', // Set India as initial selection
-                        showFlag: true,
-                        showDropDownButton: true,
-                        padding: EdgeInsets.zero,
-                        showFlagDialog: true,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            labelText: 'Phone Number',
-                            hintText: 'Enter your phone number',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
-                            } else if (value.length < 10) {
-                              return 'Please enter 10 digits phone number';
-                            }
-                            return null;
+                  if (!_isOtpSent) ...[
+                    Row(
+                      children: [
+                        CountryCodePicker(
+                          onChanged: (countryCode) {
+                            setState(() {
+                              _countryCode = countryCode.dialCode!;
+                            });
                           },
+                          initialSelection:
+                              'IN', // Set India as initial selection
+                          showFlag: true,
+                          showDropDownButton: true,
+                          padding: EdgeInsets.zero,
+                          showFlagDialog: true,
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-
-                  // Password input field
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
-                      prefixIcon: Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.deepPurple,
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'Phone Number',
+                              hintText: 'Enter your phone number',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your phone number';
+                              } else if (value.length < 10) {
+                                return 'Please enter 10 digits phone number';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        onPressed:
-                            _togglePasswordVisibility, // Toggle visibility on press
-                      ),
-                      border: OutlineInputBorder(),
+                      ],
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 20),
+                    SizedBox(height: 20),
 
-                  // Create Account button
-                  AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    transform:
-                        _isButtonPressed
-                            ? Matrix4.translationValues(10.0, 0.0, 0.0)
-                            : Matrix4.identity(),
-                    child: ElevatedButton(
+                    // Password input field
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        hintText: 'Enter your password',
+                        prefixIcon: Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.deepPurple,
+                          ),
+                          onPressed:
+                              _togglePasswordVisibility, // Toggle visibility on press
+                        ),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+
+                    // Create Account button
+                    AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      transform:
+                          _isButtonPressed
+                              ? Matrix4.translationValues(10.0, 0.0, 0.0)
+                              : Matrix4.identity(),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              _isLoading
+                                  ? Colors.deepPurple.shade300
+                                  : Colors.deepPurple.shade700,
+                          padding: EdgeInsets.symmetric(
+                            vertical: 14.0,
+                            horizontal: 50.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                        onPressed: () {
+                          _submitLoginForm();
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_isLoading)
+                              CircularProgressIndicator(color: Colors.white),
+                            if (!_isLoading)
+                              Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 20),
+
+                    GestureDetector(
+                      onTap: () {
+                        reverseStateLogin();
+                      },
+                      child: Text(
+                        'Don\'t have an account? Signup',
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 30),
+                  ] else ...[
+                    // OTP input field and Submit button
+                    Text(
+                      'Please enter the 6-digit OTP sent to your phone number',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 25),
+
+                    // 6 OTP Text Fields (Boxes)
+                    OtpTextField(
+                      numberOfFields: 6,
+                      borderColor: Color(0xFF3949AB),
+                      clearText: _canResendOtp ? true : false,
+                      //set to true to show as box or false to show as dash
+                      showFieldAsBox: true,
+                      //runs when a code is typed in
+                      onCodeChanged: (String code) {
+                        //handle validation or checks here
+                      },
+
+                      onSubmit: (String submittedOTP) {
+                        setState(() {
+                          _otp = submittedOTP;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 20),
+
+                    // Timer text and Resend button
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .spaceEvenly, // Distribute space between the timer/resend and skip text
+                        children: [
+                          // Timer text and Resend button
+                          if (!_canResendOtp)
+                            Text(
+                              'Resend OTP in $_remainingTime seconds',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          if (_canResendOtp)
+                            TextButton(
+                              onPressed: _resendOtp,
+                              child: Text('Resend OTP'),
+                            ),
+                          // Skip Verification text
+                          TextButton(
+                            onPressed: () {
+                              _onSkipVerification();
+                            },
+                            child: Text(
+                              'Skip Verification',
+                              style: TextStyle(
+                                color: Colors.deepPurple,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 20),
+
+                    // Submit OTP button
+                    ElevatedButton(
+                      onPressed: _submitOtp,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _isLoading
-                                ? Colors.deepPurple.shade300
-                                : Colors.deepPurple.shade700,
+                        backgroundColor: Colors.deepPurple,
                         padding: EdgeInsets.symmetric(
                           vertical: 14.0,
                           horizontal: 50.0,
@@ -942,7 +1173,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                       ),
-                      onPressed: () {},
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -950,34 +1180,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             CircularProgressIndicator(color: Colors.white),
                           if (!_isLoading)
                             Text(
-                              'Login',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              'Submit OTP',
+                              style: TextStyle(color: Colors.white),
                             ),
                         ],
                       ),
                     ),
-                  ),
-
-                  SizedBox(height: 20),
-
-                  GestureDetector(
-                    onTap: () {
-                      reverseStateLogin();
-                    },
-                    child: Text(
-                      'Don\'t have an account? Signup',
-                      style: TextStyle(
-                        color: Colors.deepPurple,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 30),
+                  ],
                 ],
               ),
             ),
@@ -995,7 +1204,6 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: Duration(milliseconds: 500),
           child: _isLoginActive ? _buildLoginScreen() : _buildSignupScreen(),
           transitionBuilder: (Widget child, Animation<double> animation) {
-
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(scale: animation, child: child),
@@ -1006,5 +1214,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
