@@ -1448,3 +1448,397 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
               ),
+
+
+
+
+
+
+
+
+              //Proto 2:
+
+              Container(
+                              child:
+                                  getFilteredPosts().isEmpty
+                                      ? Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.sentiment_dissatisfied,
+                                                  size: 50,
+                                                  color: Colors.grey,
+                                                ),
+                                                Text(
+                                                  'No posts found for this tag',
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      : Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          child: PageView.builder(
+                                            scrollDirection: Axis.vertical,
+                                            controller: _pageController,
+                                            itemCount: getFilteredPosts().length,
+                                            itemBuilder: (context, index) {
+                                              final post = getFilteredPosts()[index];
+                                              return Column(
+                                                children: [
+                                                  Expanded(
+                                                    child: AspectRatio(
+                                                      aspectRatio:
+                                                          16 /
+                                                          9, // Maintain a 16:9 aspect ratio for the image
+                                                      child: Image.asset(
+                                                        post['image']!,
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                  ),
+
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.end,
+                                                    children: [
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(
+                                                          left: 0.0,
+                                                          right: 5.0,
+                                                        ), // Adjust button position
+                                                        child: ElevatedButton(
+                                                          style: ButtonStyle(
+                                                            side: MaterialStateProperty.all<
+                                                              BorderSide
+                                                            >(
+                                                              BorderSide(
+                                                                color:
+                                                                    Colors
+                                                                        .purple, // Purple border color
+                                                                width: 2.0, // Border width
+                                                              ),
+                                                            ),
+                                                            backgroundColor:
+                                                                MaterialStateProperty.all<
+                                                                  Color
+                                                                >(
+                                                                  Colors
+                                                                      .white, // Background color of the button
+                                                                ),
+                                                            foregroundColor:
+                                                                MaterialStateProperty.all<
+                                                                  Color
+                                                                >(
+                                                                  Colors
+                                                                      .purple, // Text and icon color
+                                                                ),
+                                                            padding:
+                                                                MaterialStateProperty.all<
+                                                                  EdgeInsets
+                                                                >(
+                                                                  EdgeInsets.symmetric(
+                                                                    horizontal: 16,
+                                                                    vertical: 8,
+                                                                  ), // Padding
+                                                                ),
+                                                          ),
+                                                          onPressed: () {
+                                                            if (_pageController.page! <
+                                                                getFilteredPosts().length -
+                                                                    1) {
+                                                              _pageController.nextPage(
+                                                                duration: Duration(
+                                                                  milliseconds: 300,
+                                                                ), // Animation duration
+                                                                curve:
+                                                                    Curves
+                                                                        .easeInOut, // Animation curve
+                                                              );
+                                                            }
+                                                          },
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Text('Next'),
+                                                              SizedBox(width: 5),
+                                                              Icon(
+                                                                Icons.arrow_forward_ios,
+                                                                size: 10,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.center,
+                                                      children: [
+                                                        Container(
+                                                          decoration: BoxDecoration(
+                                                            color:
+                                                                Colors
+                                                                    .grey
+                                                                    .shade100, // Light background color to indicate scrollable area
+                                                            borderRadius: BorderRadius.circular(
+                                                              12,
+                                                            ), // Rounded corners for the container
+                                                            border: Border.all(
+                                                              color: Colors.grey.shade300,
+                                                            ), // Border around the container
+                                                          ),
+                                                          padding: EdgeInsets.all(
+                                                            8,
+                                                          ), // Padding inside the container
+                                                          child: SingleChildScrollView(
+                                                            scrollDirection:
+                                                                Axis.horizontal, // Allow horizontal scrolling
+                                                            child: Row(
+                                                              children: [
+                                                                // Download Button
+                                                                Column(
+                                                                  children: [
+                                                                    ElevatedButton(
+                                                                      onPressed: () {
+                                                                        // Handle download action
+                                                                      },
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Colors
+                                                                                .blue, // Blue color
+                                                                        shape:
+                                                                            CircleBorder(), // Makes the button circular
+                                                                        padding: EdgeInsets.all(
+                                                                          10,
+                                                                        ), // Smaller padding for smaller buttons
+                                                                      ),
+                                                                      child: Icon(
+                                                                        Icons.download,
+                                                                        color: Colors.white,
+                                                                        size:
+                                                                            24, // Smaller icon size
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 4,
+                                                                    ), // Space between button and text
+                                                                    Text(
+                                                                      "Download",
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Colors.black45,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 16,
+                                                                ), // Space between buttons
+                                                                // Edit Button
+                                                                Column(
+                                                                  children: [
+                                                                    ElevatedButton(
+                                                                      onPressed: () {
+                                                                        // Handle edit action
+                                                                      },
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Colors
+                                                                                .orange, // Edit button color
+                                                                        shape:
+                                                                            CircleBorder(), // Makes the button circular
+                                                                        padding: EdgeInsets.all(
+                                                                          10,
+                                                                        ), // Smaller padding for smaller buttons
+                                                                      ),
+                                                                      child: Icon(
+                                                                        Icons.edit,
+                                                                        color: Colors.white,
+                                                                        size:
+                                                                            24, // Smaller icon size
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 4,
+                                                                    ), // Space between button and text
+                                                                    Text(
+                                                                      "Edit",
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Colors.black45,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                                SizedBox(width: 16),
+                                                                // WhatsApp Button
+                                                                Column(
+                                                                  children: [
+                                                                    ElevatedButton(
+                                                                      onPressed:
+                                                                          () =>
+                                                                              _shareOnWhatsApp(
+                                                                                post['image']!,
+                                                                              ),
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Colors
+                                                                                .green, // WhatsApp green
+                                                                        shape:
+                                                                            CircleBorder(), // Makes the button circular
+                                                                        padding: EdgeInsets.all(
+                                                                          10,
+                                                                        ), // Smaller padding for smaller buttons
+                                                                      ),
+                                                                      child: Icon(
+                                                                        FontAwesomeIcons
+                                                                            .whatsapp,
+                                                                        color: Colors.white,
+                                                                        size:
+                                                                            24, // Smaller icon size
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 4,
+                                                                    ), // Space between button and text
+                                                                    Text(
+                                                                      "WhatsApp",
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Colors.black45,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 16,
+                                                                ), // Space between buttons
+                                                                // Instagram Button
+                                                                Column(
+                                                                  children: [
+                                                                    ElevatedButton(
+                                                                      onPressed:
+                                                                          () =>
+                                                                              _shareOnInstagram(
+                                                                                post['image']!,
+                                                                              ),
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Colors
+                                                                                .pink
+                                                                                .shade500, // Instagram color
+                                                                        shape:
+                                                                            CircleBorder(), // Makes the button circular
+                                                                        padding: EdgeInsets.all(
+                                                                          10,
+                                                                        ), // Smaller padding for smaller buttons
+                                                                      ),
+                                                                      child: Icon(
+                                                                        FontAwesomeIcons
+                                                                            .instagram,
+                                                                        color: Colors.white,
+                                                                        size:
+                                                                            24, // Smaller icon size
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 4,
+                                                                    ), // Space between button and text
+                                                                    Text(
+                                                                      "Instagram",
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Colors.black45,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+
+                                                                SizedBox(width: 16),
+                                                                Column(
+                                                                  children: [
+                                                                    ElevatedButton(
+                                                                      onPressed:
+                                                                          () =>
+                                                                              _shareOnSnapchat(
+                                                                                post['image']!,
+                                                                              ),
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Colors
+                                                                                .blueAccent
+                                                                                .shade400, // Snapchat color
+                                                                        shape:
+                                                                            CircleBorder(), // Makes the button circular
+                                                                        padding: EdgeInsets.all(
+                                                                          10,
+                                                                        ), // Smaller padding for smaller buttons
+                                                                      ),
+                                                                      child: Icon(
+                                                                        FontAwesomeIcons
+                                                                            .facebook,
+                                                                        color: Colors.white,
+                                                                        size:
+                                                                            24, // Smaller icon size
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 4,
+                                                                    ), // Space between button and text
+                                                                    Text(
+                                                                      "Facebook",
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Colors.black45,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                                SizedBox(width: 16),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                            ),

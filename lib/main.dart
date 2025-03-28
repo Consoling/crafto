@@ -1,6 +1,9 @@
 import 'package:crafto/helpers/user_preferences.dart';
 import 'package:crafto/homeScreen.dart';
+import 'package:crafto/profile_page.dart';
+import 'package:crafto/routes/app_routes.dart';
 import 'package:crafto/services/user_service.dart';
+import 'package:crafto/settings_Page.dart';
 import 'package:crafto/user_handle_creation.dart';
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
@@ -11,16 +14,28 @@ import 'package:animated_text_kit/animated_text_kit.dart'; // Import the animate
 import 'package:country_code_picker/country_code_picker.dart';
 import 'dart:async';
 import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_core/firebase_core.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
-  runApp(MaterialApp(home: SplashScreen()));
+  runApp(
+    MaterialApp(
+      title: 'Crafto',
+      initialRoute: AppRoutes.splashScreen,
+      routes: {
+        AppRoutes.splashScreen: (context) => SplashScreen(),
+        AppRoutes.home: (context) => HomePage(),
+        AppRoutes.signUp: (context) => HomeScreen(),
+        AppRoutes.profile: (context) => ProfilePage(),
+        AppRoutes.settings: (context) => SettingsPage(),
+        AppRoutes.userHandle: (context) => UserHandleCreation(),
+      },
+    ),
+  );
 }
 
 // Splash Screen Widget
@@ -48,16 +63,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (accessToken != null && accessToken.isNotEmpty) {
       print('Access token exists');
       // Token exists, navigate to Home
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
       // Token doesn't exist, navigate to HomeScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-      );
+      Navigator.pushReplacementNamed(context, AppRoutes.signUp);
     }
   }
 
@@ -104,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
-   _loadUserData();
+    _loadUserData();
   }
 
   Future<void> _loadData() async {
@@ -139,12 +148,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return true; // Valid OTP
   }
+
   bool _isLoginActive = false;
   final storage = FlutterSecureStorage();
   String? _accessToken;
   String? _refreshToken;
   String? _userId;
   Timer? _timer;
+
+
   Future<void> _generateToken({required String phoneNumber}) async {
     setState(() {
       _isLoading = true;
@@ -165,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
         print('Token generated successfully');
 
         // Extract tokens from cookies and JSON
-        _extractTokens(response);
+        _extractTokens(response as http.Response);
 
         // Store tokens securely using flutter_secure_storage
         await _storeTokens();
@@ -223,23 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       );
-    }
-    else if (redirectTo == '/home') {
-      Navigator.pushAndRemoveUntil(
-        context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-            (Route<dynamic> route) => false,
-      );
-    }
-    else {
+    } else if (redirectTo == '/home') {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else {
       // Handle other routes or default route
       print('Unknown route: $redirectTo');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UserHandleCreation(),
-        ), // Replace NextScreen with your actual screen
-      );
+      Navigator.pushReplacementNamed(context, AppRoutes.userHandle);
     }
   }
 
@@ -262,6 +263,80 @@ class _HomeScreenState extends State<HomeScreen> {
     HapticFeedback.vibrate();
   }
 
+  // Future<void> _submitForm() async {
+  //   if (_formKey.currentState?.validate() ?? false) {
+  //     setState(() {
+  //       _isLoading = true;
+  //       _isButtonPressed = true;
+  //     });
+
+  //     try {
+  //       // Prepare the request payload
+  //       final Map<String, String> body = {
+  //         'phoneNumber': '$_countryCode${_phoneController.text}',
+  //         'password': _passwordController.text,
+  //       };
+
+  //       // Define the endpoint URL
+  //       final String url = '${dotenv.env['INITIAL_SIGNUP_ROUTE']}';
+
+  //       // Make the POST request
+  //       final response = await http.post(
+  //         Uri.parse(url),
+  //         headers: {'Content-Type': 'application/json; charset=UTF-8'},
+  //         body: json.encode(body),
+  //       );
+
+  //       // Check the response status code
+  //       if (response.statusCode == 201) {
+  //         // Backend successfully received data and sent OTP
+  //         // print('OTP sent successfully');
+  //         // setState(() {
+  //         //   _isLoading = false;
+  //         //   _isOtpSent = true;
+  //         // });
+  //         // _startOtpTimer();
+  //         _showSuccessDialog('User Created Successfully');
+  //         await _generateToken(
+  //           phoneNumber: '$_countryCode${_phoneController.text}',
+  //         );
+  //         setState(() {
+  //           _isLoading = false;
+  //         });
+  //       } else {
+  //         // Backend returned an error
+  //         print('Error sending data to backend: ${response.statusCode}');
+  //         _showErrorDialog(
+  //           'Error sending data to backend: ${response.statusCode}',
+  //         );
+  //         setState(() {
+  //           _isLoading = false;
+  //           _isButtonPressed = false;
+  //         });
+  //       }
+  //     } catch (e) {
+  //       // Handle errors such as network issues or unexpected errors
+  //       print('Error sending data to backend: $e');
+  //       _showErrorDialog(
+  //         'An error occurred. Please check your connection and try again.',
+  //       );
+  //       setState(() {
+  //         _isLoading = false;
+  //         _isButtonPressed = false;
+  //       });
+  //     }
+
+  //     print("Form is valid");
+  //   } else {
+  //     _triggerHapticFeedback();
+  //     setState(() {
+  //       _isButtonPressed = false;
+  //     });
+  //     print("Form is not valid");
+  //   }
+  // }
+
+
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
@@ -276,10 +351,10 @@ class _HomeScreenState extends State<HomeScreen> {
           'password': _passwordController.text,
         };
 
-        // Define the endpoint URL
+        // Define the endpoint URL for the combined route
         final String url = '${dotenv.env['INITIAL_SIGNUP_ROUTE']}';
 
-        // Make the POST request
+        // Make the POST request using the http package
         final response = await http.post(
           Uri.parse(url),
           headers: {'Content-Type': 'application/json; charset=UTF-8'},
@@ -287,39 +362,41 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         // Check the response status code
-        if (response.statusCode == 201) {
-          // Backend successfully received data and sent OTP
-          print('OTP sent successfully');
-          setState(() {
-            _isLoading = false;
-            _isOtpSent = true;
-          });
-          _startOtpTimer();
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          // Success: User created and token generated
+          final responseData = json.decode(response.body);
+
+          // Extract tokens from the response
+          _extractTokens(response);
+
+          // Store tokens securely using flutter_secure_storage
+          await _storeTokens();
+
+          // Navigate to the next screen based on the redirectTo field
+          _navigateToNextScreen(responseData['redirectTo']);
+
+          // Show success message
+          _showSuccessDialog('User Created and Logged In Successfully');
         } else {
           // Backend returned an error
-          print('Error sending data to backend: ${response.statusCode}');
+          print('Error: ${response.statusCode}');
+          print('Response data: ${response.body}');
           _showErrorDialog(
-            'Error sending data to backend: ${response.statusCode}',
+            'Error: ${response.statusCode}. ${response.body}',
           );
-          setState(() {
-            _isLoading = false;
-            _isButtonPressed = false;
-          });
         }
       } catch (e) {
         // Handle errors such as network issues or unexpected errors
-        print('Error sending data to backend: $e');
+        print('Error: $e');
         _showErrorDialog(
           'An error occurred. Please check your connection and try again.',
         );
+      } finally {
         setState(() {
           _isLoading = false;
           _isButtonPressed = false;
         });
       }
-
-      print("Form is valid");
-
     } else {
       _triggerHapticFeedback();
       setState(() {
@@ -328,7 +405,82 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Form is not valid");
     }
   }
-
+  // Future<void> _submitLoginForm() async {
+  //   if (_formKey.currentState?.validate() ?? false) {
+  //     setState(() {
+  //       _isLoading = true;
+  //       _isButtonPressed = true;
+  //     });
+  //
+  //     try {
+  //       // Prepare the request payload
+  //       final Map<String, String> body = {
+  //         'phoneNumber': '$_countryCode${_phoneController.text}',
+  //         'password': _passwordController.text,
+  //       };
+  //
+  //       // Define the endpoint URL
+  //       final String url = '${dotenv.env['LOGIN_ROUTE']}';
+  //
+  //       // Make the POST request
+  //       final response = await http.post(
+  //         Uri.parse(url),
+  //         headers: {'Content-Type': 'application/json; charset=UTF-8'},
+  //         body: json.encode(body),
+  //       );
+  //
+  //       // Check the response status code
+  //       if (response.statusCode == 200) {
+  //         // Backend successfully received data and sent OTP
+  //         // print('OTP sent successfully');
+  //         // setState(() {
+  //         //   _isLoading = false;
+  //         //   _isOtpSent = true;
+  //         // });
+  //         // _startOtpTimer();
+  //         _showSuccessDialog('Logged in Successfully');
+  //         await _generateToken(
+  //           phoneNumber: '$_countryCode${_phoneController.text}',
+  //         );
+  //         setState(() {
+  //           _isLoading = false;
+  //         });
+  //       } else if (response.statusCode == 401) {
+  //         _showErrorDialog('Invalid Credentials');
+  //       } else {
+  //         // Backend returned an error
+  //         print('Error sending data to backend: ${response.statusCode}');
+  //         _showErrorDialog(
+  //           'Error sending data to backend: ${response.statusCode}',
+  //         );
+  //         setState(() {
+  //           _isLoading = false;
+  //           _isButtonPressed = false;
+  //         });
+  //       }
+  //     } catch (e) {
+  //       // Handle errors such as network issues or unexpected errors
+  //       print('Error sending data to backend: $e');
+  //       _showErrorDialog(
+  //         'An error occurred. Please check your connection and try again.',
+  //       );
+  //       setState(() {
+  //         _isLoading = false;
+  //         _isButtonPressed = false;
+  //       });
+  //     }
+  //
+  //     print("Form is valid");
+  //     print("Phone: ${_phoneController.text}");
+  //     print("Password: ${_passwordController.text}");
+  //   } else {
+  //     _triggerHapticFeedback();
+  //     setState(() {
+  //       _isButtonPressed = false;
+  //     });
+  //     print("Form is not valid");
+  //   }
+  // }
   Future<void> _submitLoginForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
@@ -343,10 +495,10 @@ class _HomeScreenState extends State<HomeScreen> {
           'password': _passwordController.text,
         };
 
-        // Define the endpoint URL
+        // Define the endpoint URL for the combined route
         final String url = '${dotenv.env['LOGIN_ROUTE']}';
 
-        // Make the POST request
+        // Make the POST request using the http package
         final response = await http.post(
           Uri.parse(url),
           headers: {'Content-Type': 'application/json; charset=UTF-8'},
@@ -354,40 +506,42 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         // Check the response status code
-        if (response.statusCode == 201) {
-          // Backend successfully received data and sent OTP
-          print('OTP sent successfully');
-          setState(() {
-            _isLoading = false;
-            _isOtpSent = true;
-          });
-          _startOtpTimer();
+        if (response.statusCode == 200) {
+          // Success: User logged in and token generated
+          _extractTokens(response);
+
+          // Store tokens securely using flutter_secure_storage
+          await _storeTokens();
+
+          // Navigate to the next screen based on the redirectTo field
+          final responseData = json.decode(response.body);
+          _navigateToNextScreen(responseData['redirectTo']);
+
+          // Show success message
+          _showSuccessDialog('Logged In Successfully');
+        } else if (response.statusCode == 401) {
+          // Invalid credentials
+          _showErrorDialog('Invalid Credentials');
         } else {
           // Backend returned an error
-          print('Error sending data to backend: ${response.statusCode}');
+          print('Error: ${response.statusCode}');
+          print('Response data: ${response.body}');
           _showErrorDialog(
-            'Error sending data to backend: ${response.statusCode}',
+            'Error: ${response.statusCode}. ${response.body}',
           );
-          setState(() {
-            _isLoading = false;
-            _isButtonPressed = false;
-          });
         }
       } catch (e) {
         // Handle errors such as network issues or unexpected errors
-        print('Error sending data to backend: $e');
+        print('Error: $e');
         _showErrorDialog(
           'An error occurred. Please check your connection and try again.',
         );
+      } finally {
         setState(() {
           _isLoading = false;
           _isButtonPressed = false;
         });
       }
-
-      print("Form is valid");
-      print("Phone: ${_phoneController.text}");
-      print("Password: ${_passwordController.text}");
     } else {
       _triggerHapticFeedback();
       setState(() {
@@ -397,22 +551,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _extractTokens(Response response) {
+  void _extractTokens(http.Response response) {
     // Extract tokens from cookies
-    final cookies = response.headers['set-cookie'];
-    if (cookies != null) {
+    final cookiesHeader = response.headers['set-cookie'];
+    if (cookiesHeader != null) {
+      // Split the header into individual cookies
+      final cookies = cookiesHeader.split(',');
+
       for (final cookie in cookies) {
-        if (cookie.startsWith('refresh_token=')) {
+        if (cookie.trim().startsWith('refresh_token=')) {
           _refreshToken = cookie.split(';')[0].split('=')[1];
         }
       }
     }
 
     // Extract tokens from JSON if present
-    if (response.data is Map<String, dynamic>) {
-      final data = response.data as Map<String, dynamic>;
-      _accessToken = data['accessToken'];
-      _userId = data['userId'];
+    final responseData = json.decode(response.body);
+    if (responseData is Map<String, dynamic>) {
+      _accessToken = responseData['accessToken'];
+      _userId = responseData['userId'];
     }
 
     print('Access Token: $_accessToken');

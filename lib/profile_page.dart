@@ -1,5 +1,7 @@
+import 'package:crafto/bottom_navbar.dart';
 import 'package:crafto/helpers/user_preferences.dart';
 import 'package:crafto/services/user_service.dart';
+import 'package:crafto/user_avatar_creation.dart';
 import 'package:crafto/user_handle_creation.dart';
 import 'package:flutter/material.dart';
 
@@ -101,21 +103,30 @@ class _ProfilePageState extends State<ProfilePage> {
                                       .bottomRight, // Aligns the edit icon to the bottom-right
                               children: [
                                 // CircleAvatar with the profile image and grey border
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape:
-                                        BoxShape
-                                            .circle, // Makes the container circular
-                                    border: Border.all(
-                                      color: Colors.grey, // Grey border color
-                                      width: 2.0, // Border width
+                                GestureDetector(
+                                  onTap: () {
+                                    // Navigate to the UserAvatarCreation page
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserAvatarCreation(),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle, // Makes the container circular
+                                      border: Border.all(
+                                        color: Colors.grey, // Grey border color
+                                        width: 2.0, // Border width
+                                      ),
                                     ),
-                                  ),
-                                  child: const CircleAvatar(
-                                    radius: 25,
-                                    backgroundImage: AssetImage(
-                                      'assets/avatar.jpg',
-                                    ), // Add your avatar image in assets
+                                    child: const CircleAvatar(
+                                      radius: 25,
+                                      backgroundImage: AssetImage(
+                                        'assets/avatar.jpg',
+                                      ), // Add your avatar image in assets
+                                    ),
                                   ),
                                 ),
 
@@ -752,7 +763,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
+
+
     );
+
+    
+    
   }
 
   void _editUsername() {}

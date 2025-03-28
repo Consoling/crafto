@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:crafto/helpers/user_preferences.dart';
 import 'package:crafto/main.dart';
+import 'package:crafto/routes/app_routes.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -509,9 +510,9 @@ Future<void> refreshAccessToken(BuildContext context) async {
       print('Error refreshing access token: $e');
 
       await signOut(context);
-      Navigator.pushReplacement(
+      Navigator.pushReplacementNamed(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        AppRoutes.signUp
       );
 
     }
